@@ -11,37 +11,6 @@ from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient
 User = get_user_model()
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
-    first_name = serializers.CharField(required=True)
-    last_name = serializers.CharField(required=True)
-
-    class Meta(UserCreateSerializer.Meta):
-        model = User
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
-
-
-class CustomUserSerializer(UserSerializer):
-    # is_subscribed = serializers.BooleanField(read_only=True)
-
-    class Meta(UserSerializer.Meta):
-        model = User
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'avatar',
-        )
-
-
 class Base64ImageField(serializers.ImageField):
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
@@ -62,6 +31,52 @@ class Base64ImageField(serializers.ImageField):
         # value.url gives the relative path (/media/recipes/images/...)
         # We manually prepend the dev server address
         return f'http://127.0.0.1:8000{value.url}'
+
+
+class CustomUserCreateSerializer(UserCreateSerializer):
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+
+    class Meta(UserCreateSerializer.Meta):
+        model = User
+        fields = (
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+        )
+
+
+class CustomUserSerializer(UserSerializer):
+    # is_subscribed = serializers.BooleanField(read_only=True)
+    avatar = Base64ImageField(allow_null=True) # ToDo: change!
+    avatar_url = serializers.SerializerMethodField(
+        'get_avatar_url',
+        read_only=True,
+    )
+
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = (
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'avatar',
+            'avatar_url',
+            'is_staff'
+        )
+
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            return f'http://127.0.0.1:8000{obj.avatar.url}'
+        return None
+        # if obj.avatar:
+        #     return obj.avatar.url
+        # return None
 
 
 class TagSerializer(serializers.ModelSerializer):

@@ -105,6 +105,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles' # ToDo: !
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media' # ToDo: !
 
+SITE_URL = 'http://localhost' # ToDo: ! mb to env?
+
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {

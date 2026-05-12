@@ -1,19 +1,20 @@
-from django.core.validators import MinValueValidator
 from django.db import models
 
 from common.constants import (
+    DEFAULT_MAX_LENGTH,
     INGREDIENT_NAME_MAX_LENGTH,
     INGREDIENT_MEASUREMENT_MAX_LENGTH,
     RECIPE_NAME_MAX_LENGTH,
+    SHORT_CODE_MAX_LENGTH,
     TAG_NAME_SLUG_FIELD_MAX_LENGTH,
-    VISUAL_NAME_LIMIT,
+    VISUAL_NAME_LIMIT
 )
 from common.validators import slug_validator
 from users.models import User
 
 
 class StrNameModel(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=DEFAULT_MAX_LENGTH)
 
     class Meta:
         abstract = True
@@ -120,3 +121,26 @@ class RecipeIngredient(models.Model):
         ]
         verbose_name = 'ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецепта'
+
+
+class RecipeShortLink(models.Model):
+    code = models.SlugField(
+        max_length=SHORT_CODE_MAX_LENGTH,
+        unique=True,
+        editable=False,
+        verbose_name='Уникальный код'
+    )
+    recipe = models.OneToOneField(
+        'Recipe',
+        on_delete=models.CASCADE,
+        related_name='short_link',
+        verbose_name='Рецепт'
+    )
+
+    class Meta:
+        verbose_name = 'короткая ссылка на рецепт'
+        verbose_name_plural = 'Короткие ссылки на рецепт'
+
+    def __str__(self):
+        return str(self.code)
+

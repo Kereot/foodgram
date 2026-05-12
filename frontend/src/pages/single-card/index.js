@@ -229,7 +229,9 @@ const SingleCard = ({ loadItem, updateOrders }) => {
                   )}
                 </Button>
               )}
-              {authContext && (userContext || {}).id === author.id && (
+              {authContext && (
+                  (userContext || {}).id === author.id || userContext?.is_staff
+              ) && (
                 <Button
                   href={`${url}/edit`}
                   className={styles["single-card__edit"]}
