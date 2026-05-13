@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
+from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -11,25 +12,114 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import (
+    CustomUserSerializer,
     IngredientSerializer,
     RecipeReadSerializer,
     RecipeWriteSerializer,
     TagSerializer,
+    UserFollowSerializer
 )
 from common.constants import SHORT_CODE_MAX_LENGTH
 from common.permissions import IsAuthorStaffOrReadOnly, IsStaffOrReadOnly
 from common.utils import generate_short_code
 from recipes.models import Ingredient, Recipe, RecipeShortLink, Tag
+from users.models import Follow
 
 User = get_user_model()
 
 
 class UserViewSet(DjoserUserViewSet):
+    lookup_field = 'id'
+
+    def get_serializer_class(self):
+        if self.action == 'subscriptions':
+            return UserFollowSerializer
+        return CustomUserSerializer
 
     def get_permissions(self):
         if self.action in ('retrieve', 'list', 'create'):
             return (AllowAny(),)
         return (IsAuthenticated(),)
+
+    @action(detail=True, methods=['post'])
+    def subscribe(self, request, id=None):
+        author = get_object_or_404(User, pk=id)
+
+        if request.user == author:
+            return Response(
+                {'errors': 'Нельзя подписаться на себя'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        follow, created = Follow.objects.get_or_create(
+            user=request.user,
+            author=author
+        )
+
+        if not created:
+            return Response(
+                {'errors': 'Вы уже подписаны'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def unsubscribe(self, request, id=None):
+        author = get_object_or_404(User, pk=id)
+
+        deleted, _ = Follow.objects.filter(
+            user=request.user,
+            author=author
+        ).delete()
+
+        if not deleted:
+            return Response(
+                {'errors': 'Вы не были подписаны'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'])
+    def subscriptions(self, request):
+        recipes_limit = request.query_params.get('recipes_limit')
+        recipes_qs = Recipe.objects.only(
+            'id',
+            'name',
+            'image',
+            'cooking_time',
+            'author_id'
+        ).order_by('-id')
+
+        users = User.objects.filter(
+            following__user=request.user
+        ).distinct().prefetch_related(
+            Prefetch('recipes', queryset=recipes_qs)
+        ).order_by('id')
+
+        page = self.paginate_queryset(users)
+        if page is not None:
+            serializer = self.get_serializer(
+                page,
+                many=True,
+                context={
+                    'request': request,
+                    'recipes_limit': recipes_limit
+                }
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(
+            users,
+            many=True,
+            context={
+                'request': request,
+                'recipes_limit': recipes_limit
+            }
+        )
+        return Response(serializer.data)
 
     @action(detail=False, methods=('put', 'delete'), url_path='me/avatar')
     def avatar(self, request):
@@ -58,6 +148,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageNumberPagination
     permission_classes = (IsAuthorStaffOrReadOnly,)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        author_id = self.request.query_params.get('author')
+
+        if author_id:
+            queryset = queryset.filter(author_id=author_id)
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:

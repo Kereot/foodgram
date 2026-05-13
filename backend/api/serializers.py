@@ -6,7 +6,8 @@ from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 
-from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from users.models import Follow
 
 User = get_user_model()
 
@@ -50,12 +51,12 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 
 
 class CustomUserSerializer(UserSerializer):
-    # is_subscribed = serializers.BooleanField(read_only=True)
     avatar = Base64ImageField(allow_null=True) # ToDo: change!
     avatar_url = serializers.SerializerMethodField(
         'get_avatar_url',
         read_only=True,
     )
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta(UserSerializer.Meta):
         model = User
@@ -67,7 +68,8 @@ class CustomUserSerializer(UserSerializer):
             'last_name',
             'avatar',
             'avatar_url',
-            'is_staff'
+            'is_staff',
+            'is_subscribed',
         )
 
     def get_avatar_url(self, obj):
@@ -77,6 +79,71 @@ class CustomUserSerializer(UserSerializer):
         # if obj.avatar:
         #     return obj.avatar.url
         # return None
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Follow.objects.filter(
+                user=request.user,
+                author=obj
+            ).exists()
+        return False
+
+
+class UserFollowSerializer(serializers.ModelSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    avatar = Base64ImageField(allow_null=True) # ToDo: change!
+    avatar_url = serializers.SerializerMethodField(
+        'get_avatar_url',
+        read_only=True,
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'recipes',
+            'recipes_count',
+
+            'avatar',
+            'avatar_url',
+        )
+
+    def get_avatar_url(self, obj): # ToDo: !
+        if obj.avatar:
+            return f'http://127.0.0.1:8000{obj.avatar.url}'
+        return None
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        limit = request.query_params.get('recipes_limit')
+        qs = Recipe.objects.filter(author=obj).order_by('-id')
+
+        if limit:
+            try:
+                qs = qs[:int(limit)]
+            except ValueError:
+                pass
+
+        return [
+            {
+                'id': recipe.pk,
+                'name': recipe.name,
+                'image': (f'http://127.0.0.1:8000{recipe.image.url}' # ToDo: !
+                          if recipe.image else None),
+                'cooking_time': recipe.cooking_time,
+            }
+            for recipe in qs
+        ]
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
 
 
 class TagSerializer(serializers.ModelSerializer):

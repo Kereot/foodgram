@@ -30,9 +30,6 @@ class User(AbstractUser):
         max_length=USER_CHAR_FIELD_MAX_LENGTH,
         blank=True,
     )
-    # is_subscribed = models.BooleanField(
-    #     default=False,
-    # )
     avatar = models.ImageField(
         upload_to='users/images/',
         blank=True,
@@ -50,3 +47,31 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Подписчик',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Автор',
+    )
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'author'),
+                name='unique_follow'
+            ),
+        )
+        verbose_name = 'подписка'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return f'Пользователь {self.user} подписан на автора {self.author}.'

@@ -143,4 +143,3 @@ class RecipeShortLink(models.Model):
 
     def __str__(self):
         return str(self.code)
-
