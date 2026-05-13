@@ -12,12 +12,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import (
+    CustomUserCreateSerializer,
     CustomUserSerializer,
     IngredientSerializer,
     RecipeReadSerializer,
     RecipeWriteSerializer,
     TagSerializer,
-    UserFollowSerializer
+    UserFollowSerializer,
 )
 from common.constants import SHORT_CODE_MAX_LENGTH
 from common.permissions import IsAuthorStaffOrReadOnly, IsStaffOrReadOnly
@@ -32,6 +33,8 @@ class UserViewSet(DjoserUserViewSet):
     lookup_field = 'id'
 
     def get_serializer_class(self):
+        if self.action == 'create':
+            return CustomUserCreateSerializer
         if self.action == 'subscriptions':
             return UserFollowSerializer
         return CustomUserSerializer

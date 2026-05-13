@@ -49,9 +49,14 @@ class CustomUserCreateSerializer(UserCreateSerializer):
             'password',
         )
 
+    def create(self, validated_data):
+        print("🔥 CREATE SERIALIZER CALLED")
+        print(validated_data)
+        return super().create(validated_data)
+
 
 class CustomUserSerializer(UserSerializer):
-    avatar = Base64ImageField(allow_null=True) # ToDo: change!
+    avatar = Base64ImageField(required=False, allow_null=True) # ToDo: change!
     avatar_url = serializers.SerializerMethodField(
         'get_avatar_url',
         read_only=True,
