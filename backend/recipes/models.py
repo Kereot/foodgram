@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import ForeignKey
 
 from common.constants import (
     DEFAULT_MAX_LENGTH,
@@ -143,3 +144,44 @@ class RecipeShortLink(models.Model):
 
     def __str__(self):
         return str(self.code)
+
+
+class AbstractUserRecipe(models.Model):
+    user = ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='%(class)ss',
+        verbose_name='Пользователь'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='%(class)ss',
+        verbose_name='Рецепт'
+    )
+
+    class Meta:
+        abstract = True
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name = '%(class)s_unique_user_recipe'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} - {self.recipe}'
+
+
+class Favorite(AbstractUserRecipe):
+
+    class Meta:
+        verbose_name = 'избранное'
+        verbose_name_plural = 'Избранное'
+
+
+class ShoppingList(AbstractUserRecipe):
+
+    class Meta:
+        verbose_name = 'список ингредиентов'
+        verbose_name_plural = 'Списки ингредиентов'

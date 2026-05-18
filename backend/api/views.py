@@ -1,9 +1,10 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from django.db.models import Prefetch
-from django.http import HttpResponseRedirect
+from django.db.models import Prefetch, Sum
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from djoser import serializers
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -12,18 +13,28 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import (
+    AvatarSerializer,
     CustomUserCreateSerializer,
     CustomUserSerializer,
     IngredientSerializer,
+    RecipeBasicReadSerializer,
     RecipeReadSerializer,
     RecipeWriteSerializer,
     TagSerializer,
-    UserFollowSerializer,
+    UserFollowSerializer
 )
 from common.constants import SHORT_CODE_MAX_LENGTH
 from common.permissions import IsAuthorStaffOrReadOnly, IsStaffOrReadOnly
-from common.utils import generate_short_code
-from recipes.models import Ingredient, Recipe, RecipeShortLink, Tag
+from common.utils import build_pdf, build_txt, generate_short_code
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    RecipeShortLink,
+    ShoppingList,
+    Tag
+)
 from users.models import Follow
 
 User = get_user_model()
@@ -35,6 +46,10 @@ class UserViewSet(DjoserUserViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return CustomUserCreateSerializer
+        if self.action == 'set_password':
+            return serializers.SetPasswordSerializer
+        if self.action == 'avatar':
+            return AvatarSerializer
         if self.action == 'subscriptions':
             return UserFollowSerializer
         return CustomUserSerializer
@@ -65,7 +80,10 @@ class UserViewSet(DjoserUserViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = self.get_serializer(author)
+        serializer = UserFollowSerializer(
+            author,
+            context={'request': request}
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
@@ -155,21 +173,73 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         author_id = self.request.query_params.get('author')
+        is_favorited = self.request.query_params.get('is_favorited')
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart')
 
         if author_id:
             queryset = queryset.filter(author_id=author_id)
+        if is_favorited == '1':
+            queryset = queryset.filter(favorites__user=self.request.user)
+        if is_in_shopping_cart == '1':
+            queryset = queryset.filter(shoppinglists__user=self.request.user)
 
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action in ('create', 'update', 'partial_update'):
             return RecipeWriteSerializer
         return RecipeReadSerializer
+
+    def _handle_recipe_relation(
+        self,
+        request,
+        recipe_id,
+        model
+    ):
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+
+        if request.method == 'POST':
+            obj, created = model.objects.get_or_create(
+                user=request.user,
+                recipe=recipe
+            )
+
+            if not created:
+                return Response(
+                    {'errors': 'Рецепт уже добавлен'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            serializer = RecipeBasicReadSerializer(
+                recipe,
+                context={'request': request}
+            )
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        if request.method == 'DELETE':
+            deleted_count, _ = model.objects.filter(
+                user=request.user,
+                recipe=recipe
+            ).delete()
+
+            if not deleted_count:
+                return Response(
+                    {'errors': 'Рецепт не найден в списке'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(detail=True, methods=['get'], url_path='get-link')
+    @action(detail=True, methods=('get',), url_path='get-link')
     def get_short_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
 
@@ -191,19 +261,94 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return Response({'short-link': short_url})
 
+    @action(
+        detail=True,
+        methods=('post', 'delete')
+    )
+    def favorite(self, request, pk=None):
+        return self._handle_recipe_relation(
+            request=request,
+            recipe_id=pk,
+            model=Favorite
+        )
 
-class TagViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    @action(
+        detail=True,
+        methods=('post', 'delete')
+    )
+    def shopping_cart(self, request, pk=None):
+        return self._handle_recipe_relation(
+            request=request,
+            recipe_id=pk,
+            model=ShoppingList
+        )
+
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,)
+    )
+    def download_shopping_cart(self, request):
+        file_format = request.query_params.get('format', 'txt')
+        ingredients = (
+            RecipeIngredient.objects
+            .filter(recipe__shoppinglists__user=request.user)
+            .values(
+                'ingredient__name',
+                'ingredient__measurement_unit'
+            )
+            .annotate(total_amount=Sum('amount'))
+            .order_by('ingredient__name')
+        )
+
+        if file_format == 'txt':
+            content = build_txt(ingredients)
+
+            return HttpResponse(
+                content,
+                content_type='text/plain; charset=utf-8',
+                headers={
+                    'Content-Disposition': 'attachment; filename="shopping_list.txt"'
+                }
+            )
+
+        if file_format == 'pdf':
+            buffer = build_pdf(ingredients)
+
+            return HttpResponse(
+                buffer,
+                content_type='application/pdf',
+                headers={
+                    'Content-Disposition': 'attachment; filename="shopping_list.pdf"'
+                }
+            )
+
+        return Response(
+            {'errors': 'Unsupported format (txt, pdf)'},
+            status=400
+        )
+
+
+class TagViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = None
-    permission_classes = (IsStaffOrReadOnly,)
+    permission_classes = (AllowAny,)
 
 
-class IngredientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class IngredientViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    permission_classes = (IsStaffOrReadOnly,)
+    permission_classes = (AllowAny,)
 
 
 def short_link_redirect(request, code):

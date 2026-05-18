@@ -18,3 +18,5 @@ VISUAL_NAME_LIMIT = 25
 
 USERNAME_REGEX = r'[\w.@+-]'
 SLUG_REGEX = r'^[-a-zA-Z0-9_]+$'
+
+SHOPPING_LIST_TEXT = 'Список покупок'

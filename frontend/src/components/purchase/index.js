@@ -65,7 +65,7 @@ const Purchase = ({
     </div>
     {expanded && ingredients && ingredients.length > 0 && <ul className={styles.purchaseIngredients}>
       {ingredients.map(ingredient => {
-      return <li>{ingredient.name}</li>
+      return <li>{ingredient.name} — {ingredient.amount} {ingredient.measurement_unit}</li>
       })}
     </ul>}
     
