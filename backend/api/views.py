@@ -306,7 +306,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .order_by('ingredient__name')
         )
 
-        if file_format == 'txt' or not file_format:
+        if file_format == 'txt':
             content = build_txt(ingredients)
 
             return HttpResponse(
