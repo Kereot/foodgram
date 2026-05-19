@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from common.constants import PAGE_SIZE
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,7 +15,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-CORS_ALLOWED_ORIGINS = ['*'] # ToDo: !
+CORS_ALLOWED_ORIGINS = ['*']  # ToDo: !
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -58,6 +59,9 @@ TEMPLATES = [
         },
     },
 ]
+TEMPLATES[0]['DIRS'].append(
+    BASE_DIR / '../venv/Lib/site-packages/django_filters/templates'
+)
 
 WSGI_APPLICATION = 'api_foodgram.wsgi.application'
 
@@ -100,21 +104,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles' # ToDo: !
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # ToDo: !
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media' # ToDo: !
+MEDIA_ROOT = BASE_DIR / 'media'  # ToDo: !
 
-SITE_URL = 'http://localhost' # ToDo: ! mb to env?
+SITE_URL = 'http://localhost'  # ToDo: ! mb to env?
 
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.SessionAuthentication', # ToDo: delete
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_FILTER_BACKENDS': [
@@ -122,7 +129,7 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend'
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 6, #ToDo: в константы?
+    'PAGE_SIZE': PAGE_SIZE,
 }
 
 DJOSER = {

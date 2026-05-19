@@ -21,11 +21,13 @@ def validate_username(value):
 
     return value
 
+
 def validate_required_field(field, attrs):
     if field not in attrs or not attrs[field]:
         raise ValidationError(
             {field: f'Для данного запроса поле {field} обязательно.'}
         )
+
 
 def validate_unique_field(field, attrs, is_nested=False):
     data = attrs.get(field, [])
@@ -44,6 +46,7 @@ def validate_unique_field(field, attrs, is_nested=False):
         raise ValidationError(
             {field: f'Значения полей {field} не должны повторяться.'}
         )
+
 
 slug_validator = RegexValidator(
     regex=SLUG_REGEX,

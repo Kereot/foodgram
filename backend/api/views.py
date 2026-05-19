@@ -8,10 +8,11 @@ from djoser import serializers
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from api.filters import IngredientSearchFilter, RecipeFilter
+from api.paginators import LimitOnlyPagination
 from api.serializers import (
     AvatarSerializer,
     CustomUserCreateSerializer,
@@ -167,11 +168,13 @@ class UserViewSet(DjoserUserViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    pagination_class = PageNumberPagination
+    pagination_class = LimitOnlyPagination
     permission_classes = (IsAuthorStaffOrReadOnly,)
+    filterset_class = RecipeFilter
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
         author_id = self.request.query_params.get('author')
         is_favorited = self.request.query_params.get('is_favorited')
         is_in_shopping_cart = self.request.query_params.get(
@@ -179,9 +182,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if author_id:
             queryset = queryset.filter(author_id=author_id)
-        if is_favorited == '1':
+        if is_favorited == '1' and user.is_authenticated:
             queryset = queryset.filter(favorites__user=self.request.user)
-        if is_in_shopping_cart == '1':
+        if is_in_shopping_cart == '1' and user.is_authenticated:
             queryset = queryset.filter(shoppinglists__user=self.request.user)
 
         return queryset
@@ -248,7 +251,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             try:
                 short_link, created = RecipeShortLink.objects.get_or_create(
                     recipe=recipe,
-                    defaults={'code': generate_short_code(SHORT_CODE_MAX_LENGTH)}
+                    defaults={
+                        'code': generate_short_code(SHORT_CODE_MAX_LENGTH)
+                    }
                 )
                 break
             except IntegrityError as e:
@@ -301,14 +306,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .order_by('ingredient__name')
         )
 
-        if file_format == 'txt':
+        if file_format == 'txt' or not file_format:
             content = build_txt(ingredients)
 
             return HttpResponse(
                 content,
                 content_type='text/plain; charset=utf-8',
                 headers={
-                    'Content-Disposition': 'attachment; filename="shopping_list.txt"'
+                    'Content-Disposition':
+                        'attachment; filename="shopping_list.txt"'
                 }
             )
 
@@ -319,7 +325,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 buffer,
                 content_type='application/pdf',
                 headers={
-                    'Content-Disposition': 'attachment; filename="shopping_list.pdf"'
+                    'Content-Disposition':
+                        'attachment; filename="shopping_list.pdf"'
                 }
             )
 
@@ -347,6 +354,8 @@ class IngredientViewSet(
 ):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (IngredientSearchFilter,)
+    search_fields = ('name',)
     pagination_class = None
     permission_classes = (AllowAny,)
 

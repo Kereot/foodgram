@@ -24,15 +24,10 @@ class Base64ImageField(serializers.ImageField):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, value): # ToDo: !
-        """
-        Forces the output URL to use the local dev IP and port.
-        """
+    def to_representation(self, value):  # ToDo: !
         if not value:
             return None
 
-        # value.url gives the relative path (/media/recipes/images/...)
-        # We manually prepend the dev server address
         return f'http://127.0.0.1:8000{value.url}'
 
 
@@ -140,7 +135,7 @@ class UserFollowSerializer(CustomUserSerializer):
             {
                 'id': recipe.pk,
                 'name': recipe.name,
-                'image': (f'http://127.0.0.1:8000{recipe.image.url}' # ToDo: !
+                'image': (f'http://127.0.0.1:8000{recipe.image.url}'  # ToDo: !
                           if recipe.image else None),
                 'cooking_time': recipe.cooking_time,
             }
@@ -180,7 +175,7 @@ class RecipeIngredientReadSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField(min_value=1, max_value=32_000) # ToDo: !
+    amount = serializers.IntegerField(min_value=1, max_value=32_000)  # ToDo: !
 
     class Meta:
         fields = ('id', 'amount')
@@ -189,18 +184,13 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
 
 class RecipeBasicReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
-    image = Base64ImageField(allow_null=True) # ToDo: change!
-    # image_url = serializers.SerializerMethodField(
-    #     'get_image_url',
-    #     read_only=True,
-    # )
+    image = Base64ImageField(allow_null=True)  # ToDo: change!
 
     class Meta:
         fields = (
             'id',
             'name',
             'image',
-            # 'image_url',
             'cooking_time'
         )
         model = Recipe
@@ -213,6 +203,7 @@ class RecipeBasicReadSerializer(serializers.ModelSerializer):
         # if obj.image:
         #     return obj.image.url
         # return None
+
 
 class RecipeReadSerializer(RecipeBasicReadSerializer):
     ingredients = RecipeIngredientReadSerializer(

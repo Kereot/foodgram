@@ -10,6 +10,7 @@ def generate_short_code(length):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choices(chars, k=length))
 
+
 def build_txt(ingredients):
     lines = [f'{SHOPPING_LIST_TEXT}:\n']
 
@@ -21,6 +22,7 @@ def build_txt(ingredients):
         )
 
     return '\n'.join(lines)
+
 
 def build_pdf(ingredients):
     buffer = BytesIO()
