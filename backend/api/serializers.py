@@ -1,6 +1,7 @@
 import base64
 import uuid
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
@@ -135,7 +136,7 @@ class UserFollowSerializer(CustomUserSerializer):
             {
                 'id': recipe.pk,
                 'name': recipe.name,
-                'image': (f'http://127.0.0.1:8000{recipe.image.url}'  # ToDo: !
+                'image': (f'{settings.SITE_URL}{recipe.image.url}'
                           if recipe.image else None),
                 'cooking_time': recipe.cooking_time,
             }

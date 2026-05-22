@@ -22,6 +22,8 @@ ALLOWED_HOSTS = [
     in (os.getenv('DJANGO_ALLOWED_HOSTS') or 'localhost,127.0.0.1').split(',')
 ]
 
+SITE_URL = os.getenv('SITE_URL')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
