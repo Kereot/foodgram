@@ -3,6 +3,7 @@ djangorestframework==3.15.2
 djangorestframework_simplejwt==5.4.0
 djoser==2.3.1
 django-filter==23.5
+psycopg2-binary==2.9.11
 pillow==12.2.0
 reportlab
 flake8==7.3.0

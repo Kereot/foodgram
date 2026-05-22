@@ -24,11 +24,11 @@ class Base64ImageField(serializers.ImageField):
 
         return super().to_internal_value(data)
 
-    def to_representation(self, value):  # ToDo: !
-        if not value:
-            return None
-
-        return f'http://127.0.0.1:8000{value.url}'
+    # def to_representation(self, value):
+    #     if not value:
+    #         return None
+    #
+    #     return f'http://127.0.0.1:8000{value.url}'
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -92,13 +92,13 @@ class CustomUserSerializer(UserSerializer):
             'is_subscribed'
         )
 
-    def get_avatar_url(self, obj):
-        if obj.avatar:
-            return f'http://127.0.0.1:8000{obj.avatar.url}'
-        return None
-        # if obj.avatar:
-        #     return obj.avatar.url
-        # return None
+    # def get_avatar_url(self, obj):
+    #     # if obj.avatar:
+    #     #     return f'http://127.0.0.1:8000{obj.avatar.url}'
+    #     # return None
+    #     if obj.avatar:
+    #         return obj.avatar.url
+    #     return None
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -196,13 +196,13 @@ class RecipeBasicReadSerializer(serializers.ModelSerializer):
         model = Recipe
         read_only_fields = ('author',)
 
-    def get_image_url(self, obj):
-        if obj.image:
-            return f'http://127.0.0.1:8000{obj.image.url}'
-        return None
-        # if obj.image:
-        #     return obj.image.url
-        # return None
+    # def get_image_url(self, obj):
+    #     # if obj.image:
+    #     #     return f'http://127.0.0.1:8000{obj.image.url}'
+    #     # return None
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
 
 
 class RecipeReadSerializer(RecipeBasicReadSerializer):

@@ -25,7 +25,7 @@ from api.serializers import (
     UserFollowSerializer
 )
 from common.constants import SHORT_CODE_MAX_LENGTH
-from common.permissions import IsAuthorStaffOrReadOnly, IsStaffOrReadOnly
+from common.permissions import IsAuthorStaffOrReadOnly
 from common.utils import build_pdf, build_txt, generate_short_code
 from recipes.models import (
     Favorite,
@@ -242,7 +242,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(detail=True, methods=('get',), url_path='get-link')
+    @action(
+        detail=True,
+        methods=('get',),
+        url_path='get-link'
+    )
     def get_short_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
 

@@ -54,6 +54,12 @@ class Ingredient(StrNameModel):
     )
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_ingredient_name_with_unit'
+            )
+        ]
         verbose_name = 'ингредиент'
         verbose_name_plural = 'Ингредиенты'
 

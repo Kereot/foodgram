@@ -1,21 +1,27 @@
+import os
 from pathlib import Path
+
+from django.core.management import utils
+from dotenv import load_dotenv
 
 from common.constants import PAGE_SIZE
 
+
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kl__5(b9k(59!^aegsxb*huf+xttfp8=i6%96ks6jc=o*y6cxl'
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    default=utils.get_random_secret_key()
+)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', default='False').lower() == 'true'
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
+    host.strip() for host
+    in (os.getenv('DJANGO_ALLOWED_HOSTS') or 'localhost,127.0.0.1').split(',')
 ]
-
-CORS_ALLOWED_ORIGINS = ['*']  # ToDo: !
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -65,16 +71,28 @@ TEMPLATES[0]['DIRS'].append(
 
 WSGI_APPLICATION = 'api_foodgram.wsgi.application'
 
+DB_ENGINE = os.getenv('DB_ENGINE', 'postgres').lower().strip()
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DB_ENGINE == 'postgres':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'django'),
+            'USER': os.getenv('POSTGRES_USER', 'django'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', ''),
+            'PORT': os.getenv('DB_PORT', '5432')
+        }
     }
-}
+elif DB_ENGINE == 'sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    raise ValueError(f'Unknown database engine: {DB_ENGINE}')
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -97,19 +115,15 @@ TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
+USE_L10N = True
+
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # ToDo: !
+STATIC_ROOT = BASE_DIR / 'collected_static'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'  # ToDo: !
-
-SITE_URL = 'http://localhost'  # ToDo: ! mb to env?
+MEDIA_ROOT = BASE_DIR / 'media'
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -140,9 +154,5 @@ DJOSER = {
         'current_user': 'api.serializers.CustomUserSerializer',
     },
 }
-
-# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-# EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
-# DEFAULT_FROM_EMAIL = 'noreply@katfood.sytes.net' #ToDo: в .env?
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
