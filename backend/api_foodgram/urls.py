@@ -5,7 +5,6 @@ from django.urls import include, path
 
 from api.views import short_link_redirect
 
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('s/<str:code>/', short_link_redirect, name='short-link'),

@@ -1,15 +1,12 @@
 from django.db import models
 from django.db.models import ForeignKey
 
-from common.constants import (
-    DEFAULT_MAX_LENGTH,
-    INGREDIENT_NAME_MAX_LENGTH,
-    INGREDIENT_MEASUREMENT_MAX_LENGTH,
-    RECIPE_NAME_MAX_LENGTH,
-    SHORT_CODE_MAX_LENGTH,
-    TAG_NAME_SLUG_FIELD_MAX_LENGTH,
-    VISUAL_NAME_LIMIT
-)
+from common.constants import (DEFAULT_MAX_LENGTH,
+                              INGREDIENT_MEASUREMENT_MAX_LENGTH,
+                              INGREDIENT_NAME_MAX_LENGTH,
+                              RECIPE_NAME_MAX_LENGTH, SHORT_CODE_MAX_LENGTH,
+                              TAG_NAME_SLUG_FIELD_MAX_LENGTH,
+                              VISUAL_NAME_LIMIT)
 from common.validators import slug_validator
 from users.models import User
 

@@ -13,29 +13,16 @@ from rest_framework.response import Response
 
 from api.filters import IngredientSearchFilter, RecipeFilter
 from api.paginators import LimitOnlyPagination
-from api.serializers import (
-    AvatarSerializer,
-    CustomUserCreateSerializer,
-    CustomUserSerializer,
-    IngredientSerializer,
-    RecipeBasicReadSerializer,
-    RecipeReadSerializer,
-    RecipeWriteSerializer,
-    TagSerializer,
-    UserFollowSerializer
-)
+from api.serializers import (AvatarSerializer, CustomUserCreateSerializer,
+                             CustomUserSerializer, IngredientSerializer,
+                             RecipeBasicReadSerializer, RecipeReadSerializer,
+                             RecipeWriteSerializer, TagSerializer,
+                             UserFollowSerializer)
 from common.constants import SHORT_CODE_MAX_LENGTH
 from common.permissions import IsAuthorStaffOrReadOnly
 from common.utils import build_pdf, build_txt, generate_short_code
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    RecipeShortLink,
-    ShoppingList,
-    Tag
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            RecipeShortLink, ShoppingList, Tag)
 from users.models import Follow
 
 User = get_user_model()

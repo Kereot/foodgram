@@ -1,6 +1,7 @@
 import random
 import string
 from io import BytesIO
+
 from reportlab.pdfgen import canvas
 
 from common.constants import SHOPPING_LIST_TEXT

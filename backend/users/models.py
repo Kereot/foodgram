@@ -1,10 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from common.constants import (
-    USER_CHAR_FIELD_MAX_LENGTH,
-    USER_EMAIL_FIELD_MAX_LENGTH,
-)
+from common.constants import (USER_CHAR_FIELD_MAX_LENGTH,
+                              USER_EMAIL_FIELD_MAX_LENGTH)
 from common.validators import validate_username
 
 

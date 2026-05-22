@@ -1,15 +1,8 @@
 from django.contrib import admin
 from django.db.models import Count
 
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    RecipeShortLink,
-    ShoppingList,
-    Tag
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            RecipeShortLink, ShoppingList, Tag)
 
 
 class EmptyDisplayAdmin(admin.ModelAdmin):
