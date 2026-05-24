@@ -4,8 +4,7 @@
   <a href="#" target="_blank">
     <img alt="License: MIT license" src="https://img.shields.io/badge/License-MIT license-yellow.svg" />
   </a>
-  <img alt="Workflow" src="https://github.
-com/Kereot/foodgram/actions/workflows/main.yml/badge.svg?branch=main" />
+  <img alt="Workflow" src="https://github.com/Kereot/foodgram/actions/workflows/main.yml/badge.svg?branch=main" />
 </p>
 
 > Foodgram - это разворачиваемый сайт, где зарегистрированные пользователи 
