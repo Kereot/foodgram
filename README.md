@@ -63,7 +63,7 @@ com/Kereot/foodgram/actions/workflows/main.yml/badge.svg?branch=main" />
 - /api/ingredients/ - $${\color{green}GET}$$ - ингредиенты;
 - /api/ingredients/{id}/ - $${\color{green}GET}$$ - конкретный ингредиент;
 - /api/recipes/ - $${\color{green}GET}$$, $${\color{blue}POST}$$ - рецепты;
-- /api/recipes/{id}/ - $${\color{green}GET}$$, $${\color{orange}PATCH}$$, DELETE - управление конкретным рецептом;
+- /api/recipes/{id}/ - $${\color{green}GET}$$, $${\color{orange}PATCH}$$, $${\color{red}DELETE}$$ - управление конкретным рецептом;
 - /api/recipes/download_shopping_cart/ - $${\color{green}GET}$$ - получение файла покупок;
 - /api/recipes/{id}/get-link/ - $${\color{green}GET}$$ - получение короткой ссылки на рецепт;
 - /api/recipes/{id}/favorite/ - $${\color{blue}POST}$$, $${\color{red}DELETE}$$ - управление рецептом в избранном;
@@ -86,6 +86,7 @@ git clone https://github.com/kereot/foodgram.git
 - DJANGO_DEBUG (по умолчанию будет False)
 - DJANGO_ALLOWED_HOSTS (значения localhost, 127.0.0.1 будут по умолчанию, 
   необходимо указать их и ваш адрес сайта)
+- SITE_URL (адрес вашего сайта в Интернет, включая https://)
 - POSTGRES_USER
 - POSTGRES_PASSWORD
 - POSTGRES_DB
