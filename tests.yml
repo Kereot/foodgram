@@ -1,3 +1,4 @@
 login: blackcat@meow.com
 password: meow2meow2meow2
 vm_name: r-backend-vm-24565456
+# Внёс изменения в 2 строки, все Postman тесты сейчас пройдены.

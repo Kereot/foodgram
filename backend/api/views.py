@@ -139,8 +139,7 @@ class UserViewSet(DjoserUserViewSet):
         if request.method == 'PUT':
             serializer = self.get_serializer(
                 user,
-                data=request.data,
-                partial=True
+                data=request.data
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -351,7 +350,7 @@ class IngredientViewSet(
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = (IngredientSearchFilter,)
-    search_fields = ('name',)
+    search_fields = ('^name',)  # Мне кажется, ограничивать началом неудобно.
     pagination_class = None
     permission_classes = (AllowAny,)
 
