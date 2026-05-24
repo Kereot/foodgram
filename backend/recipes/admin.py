@@ -26,8 +26,8 @@ class RecipeAdmin(EmptyDisplayAdmin):
     inlines = (RecipeIngredientInline,)
     list_display = ('pk', 'name', 'author', 'get_ingredients', 'get_tags',
                     'text', 'cooking_time', 'favorites_count')
-    search_fields = ('name', 'author', 'text')
-    list_filter = ('name', 'tags', 'cooking_time')
+    search_fields = ('name', 'author__username', 'text')
+    list_filter = ('tags', 'cooking_time')
     readonly_fields = ('favorites_count',)
 
     def get_queryset(self, request):
