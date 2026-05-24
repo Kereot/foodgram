@@ -32,8 +32,8 @@ def build_pdf(ingredients):
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
 
-    font_path = os.path.join('static', 'fonts', 'Arial.ttf')
-    pdfmetrics.registerFont(TTFont('Arial', font_path))
+    font_path = os.path.join('static', 'fonts', 'arial.ttf')
+    pdfmetrics.registerFont(TTFont('arial', font_path))
 
     y = 800
     p.setFont('Arial', 16)
