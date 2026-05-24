@@ -36,11 +36,11 @@ def build_pdf(ingredients):
     pdfmetrics.registerFont(TTFont('arial', font_path))
 
     y = 800
-    p.setFont('Arial', 16)
+    p.setFont('arial', 16)
     p.drawString(100, y, SHOPPING_LIST_TEXT)
     y -= 30
 
-    p.setFont('Arial', 12)
+    p.setFont('arial', 12)
     for ing in ingredients:
         line = (
             f'{ing["ingredient__name"]}: '
@@ -53,7 +53,7 @@ def build_pdf(ingredients):
 
         if y < 50:
             p.showPage()
-            p.setFont('Arial', 12)
+            p.setFont('arial', 12)
             y = 800
 
     p.save()
