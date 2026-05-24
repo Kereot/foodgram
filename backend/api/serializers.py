@@ -7,7 +7,9 @@ from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 
-from common.constants import USER_CHAR_FIELD_MAX_LENGTH
+from common.constants import (MAX_SMALL_POSITIVE_INTEGER_FIELD,
+                              MIN_POSITIVE_INTEGER_FIELD,
+                              USER_CHAR_FIELD_MAX_LENGTH)
 from common.validators import validate_required_field, validate_unique_field
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import Follow
@@ -24,12 +26,6 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name=filename)
 
         return super().to_internal_value(data)
-
-    # def to_representation(self, value):
-    #     if not value:
-    #         return None
-    #
-    #     return f'http://127.0.0.1:8000{value.url}'
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -53,30 +49,17 @@ class CustomUserCreateSerializer(UserCreateSerializer):
             'password',
         )
 
-    def create(self, validated_data):
-        print("🔥 CREATE SERIALIZER CALLED")
-        print(validated_data)
-        return super().create(validated_data)
-
 
 class AvatarSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField()
+    avatar = Base64ImageField(required=True)
 
     class Meta:
         model = User
         fields = ('avatar',)
 
-    def validate(self, attrs):
-        validate_required_field('avatar', attrs)
-        return attrs
-
 
 class CustomUserSerializer(UserSerializer):
     avatar = Base64ImageField(required=False, allow_null=True)
-    # avatar_url = serializers.SerializerMethodField(
-    #     'get_avatar_url',
-    #     read_only=True,
-    # )
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta(AvatarSerializer.Meta):
@@ -88,18 +71,12 @@ class CustomUserSerializer(UserSerializer):
             'first_name',
             'last_name',
             'avatar',
-            # 'avatar_url',
+            # Поле ниже позволяет редактировать чужие рецепты админу из
+            # обычного интерфейса сайта, соответствующие изменения внесены на
+            # фронт, но постман-тесты требуют отсутствия лишних полей.
             # 'is_staff',
             'is_subscribed'
         )
-
-    # def get_avatar_url(self, obj):
-    #     # if obj.avatar:
-    #     #     return f'http://127.0.0.1:8000{obj.avatar.url}'
-    #     # return None
-    #     if obj.avatar:
-    #         return obj.avatar.url
-    #     return None
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -176,7 +153,10 @@ class RecipeIngredientReadSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    amount = serializers.IntegerField(min_value=1, max_value=32_000)  # ToDo: !
+    amount = serializers.IntegerField(
+        min_value=MIN_POSITIVE_INTEGER_FIELD,
+        max_value=MAX_SMALL_POSITIVE_INTEGER_FIELD
+    )
 
     class Meta:
         fields = ('id', 'amount')
@@ -185,7 +165,7 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
 
 class RecipeBasicReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
-    image = Base64ImageField(allow_null=True)  # ToDo: change!
+    image = Base64ImageField(allow_null=True)
 
     class Meta:
         fields = (
@@ -196,14 +176,6 @@ class RecipeBasicReadSerializer(serializers.ModelSerializer):
         )
         model = Recipe
         read_only_fields = ('author',)
-
-    # def get_image_url(self, obj):
-    #     # if obj.image:
-    #     #     return f'http://127.0.0.1:8000{obj.image.url}'
-    #     # return None
-    #     if obj.image:
-    #         return obj.image.url
-    #     return None
 
 
 class RecipeReadSerializer(RecipeBasicReadSerializer):
@@ -255,7 +227,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = Base64ImageField()
+    image = Base64ImageField(required=True)
 
     class Meta:
         fields = ('id', 'tags', 'author', 'ingredients', 'name', 'image',

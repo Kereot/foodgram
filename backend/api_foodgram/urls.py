@@ -9,7 +9,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('s/<str:code>/', short_link_redirect, name='short-link'),
     path('api/', include('api.urls')),
-    path('api-auth/', include('rest_framework.urls')),  # ToDo: delete!
 ]
 
 if settings.DEBUG:

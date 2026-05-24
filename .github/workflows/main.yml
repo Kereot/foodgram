@@ -18,6 +18,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           pip install flake8==7.3.0
+#          isort на workflow даёт другие результаты, чем локально
 #          pip install flake8==7.3.0 flake8-isort
       - name: Test with flake8
         run: |
@@ -129,8 +130,8 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yml, data/"
-          target: "foodgram"
+          source: 'docker-compose.yml, data/'
+          target: 'foodgram'
       - name: Executing remote ssh commands to deploy
         uses: appleboy/ssh-action@master
         with:

@@ -12,6 +12,7 @@ class EmptyDisplayAdmin(admin.ModelAdmin):
 class UserAdmin(EmptyDisplayAdmin):
     list_display = ('pk', 'email', 'username', 'first_name', 'last_name',
                     'avatar')
+    exclude = ('groups', 'password')
     search_fields = ('email', 'username')
     list_filter = ('email', 'username')
 

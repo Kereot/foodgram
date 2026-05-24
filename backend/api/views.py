@@ -285,7 +285,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        file_format = request.query_params.get('format', 'txt')
+        file_format = request.query_params.get('format', 'pdf')
         ingredients = (
             RecipeIngredient.objects
             .filter(recipe__shoppinglists__user=request.user)
@@ -352,7 +352,6 @@ class IngredientViewSet(
 
 
 def short_link_redirect(request, code):
-    print("HIT SHORT LINK:", code)
     short_link = get_object_or_404(RecipeShortLink, code=code)
 
     return HttpResponseRedirect(

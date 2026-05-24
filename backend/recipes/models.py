@@ -80,7 +80,7 @@ class Recipe(StrNameModel):
     )
     image = models.ImageField(
         upload_to='recipes/images/',
-        null=True,  # ToDo: убрать!
+        null=True,
         default=None,
         verbose_name='Картинка, закодированная в Base64'
     )

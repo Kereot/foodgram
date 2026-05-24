@@ -19,10 +19,6 @@ services:
     depends_on:
       - db
   frontend:
-#    container_name: foodgram-front
-#    build: ../frontend
-#    volumes:
-#      - ../frontend/:/app/result_build/
     env_file: .env
     image: kereot/foodgram-front
     command: cp -r /app/build/. /static/
