@@ -158,6 +158,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOnlyPagination
     permission_classes = (IsAuthorStaffOrReadOnly,)
     filterset_class = RecipeFilter
+    ordering_fields = ('id', 'name')
+    ordering = ('-id',)
 
     def get_queryset(self):
         queryset = super().get_queryset()
