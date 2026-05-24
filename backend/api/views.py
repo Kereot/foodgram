@@ -298,11 +298,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
         if file_format == 'txt':
-            content = build_txt(ingredients)
+            content_with_bom = '\ufeff' + build_txt(ingredients)
 
             return HttpResponse(
-                content,
-                content_type='text/plain; charset=utf-8',
+                content_with_bom.encode('utf-8'),
+                content_type='text/plain',
                 headers={
                     'Content-Disposition':
                         'attachment; filename="shopping_list.txt"'

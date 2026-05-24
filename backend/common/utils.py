@@ -1,7 +1,10 @@
+import os
 import random
 import string
 from io import BytesIO
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 from common.constants import SHOPPING_LIST_TEXT
@@ -29,10 +32,15 @@ def build_pdf(ingredients):
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
 
+    font_path = os.path.join('static', 'fonts', 'Arial.ttf')
+    pdfmetrics.registerFont(TTFont('Arial', font_path))
+
     y = 800
+    p.setFont('Arial', 16)
     p.drawString(100, y, SHOPPING_LIST_TEXT)
     y -= 30
 
+    p.setFont('Arial', 12)
     for ing in ingredients:
         line = (
             f'{ing["ingredient__name"]}: '
@@ -45,6 +53,7 @@ def build_pdf(ingredients):
 
         if y < 50:
             p.showPage()
+            p.setFont('Arial', 12)
             y = 800
 
     p.save()
