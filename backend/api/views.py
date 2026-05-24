@@ -4,10 +4,12 @@ from django.db import IntegrityError
 from django.db.models import Prefetch, Sum
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser import serializers
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -157,8 +159,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = LimitOnlyPagination
     permission_classes = (IsAuthorStaffOrReadOnly,)
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
     filterset_class = RecipeFilter
-    ordering_fields = ('id', 'name')
+    ordering_fields = ('id',)
     ordering = ('-id',)
 
     def get_queryset(self):
