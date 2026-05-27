@@ -151,10 +151,8 @@ class RecipeReadSerializer(RecipeBasicReadSerializer):
 
     def _relation_manager(self, obj, related_name):
         user = self.context['request'].user
-        return (
-                user.is_authenticated
-                and getattr(obj, related_name).filter(user=user).exists()
-                )
+        return (user.is_authenticated
+                and getattr(obj, related_name).filter(user=user).exists())
 
     def get_is_favorited(self, obj):
         return self._relation_manager(obj, 'favorites')
