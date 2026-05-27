@@ -1,99 +1,52 @@
-import base64
-import uuid
-
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
+from api.fields import NoBlankBase64ImageField
 from common.constants import (MAX_SMALL_POSITIVE_INTEGER_FIELD,
-                              MIN_POSITIVE_INTEGER_FIELD,
-                              USER_CHAR_FIELD_MAX_LENGTH)
+                              MIN_POSITIVE_INTEGER_FIELD)
 from common.validators import validate_required_field, validate_unique_field
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
-from users.models import Follow
 
 User = get_user_model()
 
 
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            filename = f'{uuid.uuid4()}.{ext}'
-            data = ContentFile(base64.b64decode(imgstr), name=filename)
-
-        return super().to_internal_value(data)
-
-
-class CustomUserCreateSerializer(UserCreateSerializer):
-    first_name = serializers.CharField(
-        max_length=USER_CHAR_FIELD_MAX_LENGTH,
-        required=True
-    )
-    last_name = serializers.CharField(
-        max_length=USER_CHAR_FIELD_MAX_LENGTH,
-        required=True
-    )
-
-    class Meta(UserCreateSerializer.Meta):
-        model = User
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
-
-
 class AvatarSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField(required=True, allow_null=False)
+    avatar = NoBlankBase64ImageField(required=True, allow_null=False)
 
     class Meta:
         model = User
         fields = ('avatar',)
 
 
-class CustomUserSerializer(UserSerializer):
-    avatar = Base64ImageField(required=False, allow_null=True)
+class ExtendedUserSerializer(UserSerializer):
+    avatar = NoBlankBase64ImageField(required=False, allow_null=True)
     is_subscribed = serializers.SerializerMethodField()
 
-    class Meta(AvatarSerializer.Meta):
+    class Meta(UserSerializer.Meta):
         model = User
-        fields = AvatarSerializer.Meta.fields + (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
+        fields = UserSerializer.Meta.fields + (
             'avatar',
-            # Поле ниже позволяет редактировать чужие рецепты админу из
-            # обычного интерфейса сайта, соответствующие изменения внесены на
-            # фронт, но постман-тесты требуют отсутствия лишних полей.
             # 'is_staff',
             'is_subscribed'
         )
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Follow.objects.filter(
-                user=request.user,
-                author=obj
-            ).exists()
-        return False
+        # Разве это лучше читается варианта с if?
+        return bool(
+            request
+            and request.user.is_authenticated
+            and request.user.following.filter(author=obj).exists()
+        )
 
 
-class UserFollowSerializer(CustomUserSerializer):
+class UserFollowSerializer(ExtendedUserSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta(CustomUserSerializer.Meta):
-        fields = CustomUserSerializer.Meta.fields + (
+    class Meta(ExtendedUserSerializer.Meta):
+        fields = ExtendedUserSerializer.Meta.fields + (
             'recipes',
             'recipes_count',
         )
@@ -109,16 +62,13 @@ class UserFollowSerializer(CustomUserSerializer):
             except ValueError:
                 pass
 
-        return [
-            {
-                'id': recipe.pk,
-                'name': recipe.name,
-                'image': (f'{settings.SITE_URL}{recipe.image.url}'
-                          if recipe.image else None),
-                'cooking_time': recipe.cooking_time,
-            }
-            for recipe in qs
-        ]
+        serializer = RecipeBasicReadSerializer(
+            qs,
+            many=True,
+            context=self.context,
+        )
+
+        return serializer.data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
@@ -165,7 +115,7 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
 
 class RecipeBasicReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
-    image = Base64ImageField(allow_null=True)
+    image = NoBlankBase64ImageField(allow_null=True)
 
     class Meta:
         fields = (
@@ -175,7 +125,6 @@ class RecipeBasicReadSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
         model = Recipe
-        read_only_fields = ('author',)
 
 
 class RecipeReadSerializer(RecipeBasicReadSerializer):
@@ -185,7 +134,7 @@ class RecipeReadSerializer(RecipeBasicReadSerializer):
         read_only=True
     )
     tags = TagSerializer(many=True)
-    author = CustomUserSerializer(read_only=True)
+    author = ExtendedUserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -200,21 +149,18 @@ class RecipeReadSerializer(RecipeBasicReadSerializer):
         )
         read_only_fields = ('author',)
 
-    def get_is_favorited(self, obj):
+    def _relation_manager(self, obj, related_name):
         user = self.context['request'].user
+        return (
+                user.is_authenticated
+                and getattr(obj, related_name).filter(user=user).exists()
+                )
 
-        if user.is_anonymous:
-            return False
-
-        return obj.favorites.filter(user=user).exists()
+    def get_is_favorited(self, obj):
+        return self._relation_manager(obj, 'favorites')
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context['request'].user
-
-        if user.is_anonymous:
-            return False
-
-        return obj.shoppinglists.filter(user=user).exists()
+        return self._relation_manager(obj, 'shoppinglists')
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -227,7 +173,17 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = Base64ImageField(required=True)
+    image = NoBlankBase64ImageField(required=True, allow_null=False)
+    cooking_time = serializers.IntegerField(
+        min_value=MIN_POSITIVE_INTEGER_FIELD,
+        max_value=MAX_SMALL_POSITIVE_INTEGER_FIELD,
+        error_messages={
+            'min_value': (
+                f'Время приготовления должно быть '
+                f'не меньше {MIN_POSITIVE_INTEGER_FIELD}.'
+            )
+        }
+    )
 
     class Meta:
         fields = ('id', 'tags', 'author', 'ingredients', 'name', 'image',
@@ -235,18 +191,26 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         model = Recipe
         read_only_fields = ('author',)
 
-    def validate_cooking_time(self, value):
-        if value < 1:
-            raise serializers.ValidationError('Время приготовления должно '
-                                              'быть больше 1')
-        return value
-
     def validate(self, attrs):
         validate_required_field('tags', attrs)
         validate_required_field('recipe_ingredients', attrs)
         validate_unique_field('tags', attrs)
         validate_unique_field('recipe_ingredients', attrs, True)
         return attrs
+    # Я так понимаю, уже не нужна проверка image, она есть в кастомном
+    # NoBlankBase64ImageField. Я её туда вставил, т.к. в модели оставил
+    # null=True, чтобы можно было напрямую в БД заносить без картинок. Из-за
+    # этого параметра в модели, drf_extra_fields иначе упорно пропускает None.
+
+    def _ingredients_bulk_create(self, recipe, ingredients_data):
+        RecipeIngredient.objects.bulk_create([
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient=item['id'],
+                amount=item['amount']
+            )
+            for item in ingredients_data
+        ])
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('recipe_ingredients')
@@ -255,12 +219,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags_data)
 
-        for item in ingredients_data:
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=item['id'],
-                amount=item['amount']
-            )
+        self._ingredients_bulk_create(recipe, ingredients_data)
 
         return recipe
 
@@ -268,23 +227,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop('recipe_ingredients', None)
         tags_data = validated_data.pop('tags', None)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        instance.tags.set(tags_data)
 
-        if tags_data is not None:
-            instance.tags.set(tags_data)
+        instance.ingredients.clear()
+        self._ingredients_bulk_create(instance, ingredients_data)
 
-        if ingredients_data is not None:
-            instance.ingredients.clear()
-            for item in ingredients_data:
-                RecipeIngredient.objects.create(
-                    recipe=instance,
-                    ingredient=item['id'],
-                    amount=item['amount']
-                )
-
-        instance.save()
-        return instance
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         return RecipeReadSerializer(instance, context=self.context).data

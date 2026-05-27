@@ -1,3 +1,4 @@
+from django_filters import AllValuesMultipleFilter
 from django_filters.rest_framework import FilterSet, ModelMultipleChoiceFilter
 from rest_framework.filters import SearchFilter
 
@@ -9,11 +10,9 @@ class IngredientSearchFilter(SearchFilter):
 
 
 class RecipeFilter(FilterSet):
-    tags = ModelMultipleChoiceFilter(
+    tags = AllValuesMultipleFilter(
         field_name='tags__slug',
-        to_field_name='slug',
-        queryset=Tag.objects.all(),
-        conjoined=False,
+
     )
 
     class Meta:

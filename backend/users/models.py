@@ -21,12 +21,10 @@ class User(AbstractUser):
     first_name = models.CharField(
         'Имя',
         max_length=USER_CHAR_FIELD_MAX_LENGTH,
-        blank=True,
     )
     last_name = models.CharField(
         'Фамилия',
         max_length=USER_CHAR_FIELD_MAX_LENGTH,
-        blank=True,
     )
     avatar = models.ImageField(
         upload_to='users/images/',
@@ -36,7 +34,7 @@ class User(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username',)
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
     class Meta:
         ordering = ('username',)

@@ -8,3 +8,4 @@ pillow==12.2.0
 reportlab
 flake8==7.3.0
 python-dotenv==1.0.1
+drf-extra-fields

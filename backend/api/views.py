@@ -5,7 +5,6 @@ from django.db.models import Prefetch, Sum
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser import serializers
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -15,8 +14,7 @@ from rest_framework.response import Response
 
 from api.filters import IngredientSearchFilter, RecipeFilter
 from api.paginators import LimitOnlyPagination
-from api.serializers import (AvatarSerializer, CustomUserCreateSerializer,
-                             CustomUserSerializer, IngredientSerializer,
+from api.serializers import (AvatarSerializer, IngredientSerializer,
                              RecipeBasicReadSerializer, RecipeReadSerializer,
                              RecipeWriteSerializer, TagSerializer,
                              UserFollowSerializer)
@@ -32,17 +30,6 @@ User = get_user_model()
 
 class UserViewSet(DjoserUserViewSet):
     lookup_field = 'id'
-
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return CustomUserCreateSerializer
-        if self.action == 'set_password':
-            return serializers.SetPasswordSerializer
-        if self.action == 'avatar':
-            return AvatarSerializer
-        if self.action == 'subscriptions':
-            return UserFollowSerializer
-        return CustomUserSerializer
 
     def get_permissions(self):
         if self.action in ('retrieve', 'list', 'create'):
@@ -93,7 +80,11 @@ class UserViewSet(DjoserUserViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['get'])
+    @action(
+        detail=False,
+        methods=['get'],
+        serializer_class=UserFollowSerializer
+    )
     def subscriptions(self, request):
         recipes_limit = request.query_params.get('recipes_limit')
         recipes_qs = Recipe.objects.only(
@@ -111,28 +102,22 @@ class UserViewSet(DjoserUserViewSet):
         ).order_by('id')
 
         page = self.paginate_queryset(users)
-        if page is not None:
-            serializer = self.get_serializer(
-                page,
-                many=True,
-                context={
-                    'request': request,
-                    'recipes_limit': recipes_limit
-                }
-            )
-            return self.get_paginated_response(serializer.data)
-
         serializer = self.get_serializer(
-            users,
+            page,
             many=True,
             context={
                 'request': request,
                 'recipes_limit': recipes_limit
             }
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=('put', 'delete'), url_path='me/avatar')
+    @action(
+        detail=False,
+        methods=('put', 'delete'),
+        url_path='me/avatar',
+        serializer_class=AvatarSerializer
+    )
     def avatar(self, request):
         user = request.user
 
