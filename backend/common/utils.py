@@ -9,7 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework.response import Response
 
-from common.constants import SHOPPING_LIST_TEXT, SHOPPING_FILE_FORMAT
+from common.constants import SHOPPING_FILE_FORMAT, SHOPPING_LIST_TEXT
 
 
 def generate_short_code(length):
