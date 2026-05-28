@@ -1,9 +1,9 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.db.models import Prefetch, Sum
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
@@ -18,9 +18,9 @@ from api.serializers import (AvatarSerializer, IngredientSerializer,
                              RecipeBasicReadSerializer, RecipeReadSerializer,
                              RecipeWriteSerializer, TagSerializer,
                              UserFollowSerializer)
-from common.constants import SHORT_CODE_MAX_LENGTH
+from common.constants import MAX_COLLISION_ATTEMPTS, SHORT_CODE_MAX_LENGTH
 from common.permissions import IsAuthorStaffOrReadOnly
-from common.utils import build_pdf, build_txt, generate_short_code
+from common.utils import build_shopping_list_response, generate_short_code
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             RecipeShortLink, ShoppingList, Tag)
 from users.models import Follow
@@ -29,7 +29,6 @@ User = get_user_model()
 
 
 class UserViewSet(DjoserUserViewSet):
-    lookup_field = 'id'
 
     def get_permissions(self):
         if self.action in ('retrieve', 'list', 'create'):
@@ -148,23 +147,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     ordering_fields = ('id',)
     ordering = ('-id',)
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
-        author_id = self.request.query_params.get('author')
-        is_favorited = self.request.query_params.get('is_favorited')
-        is_in_shopping_cart = self.request.query_params.get(
-            'is_in_shopping_cart')
-
-        if author_id:
-            queryset = queryset.filter(author_id=author_id)
-        if is_favorited == '1' and user.is_authenticated:
-            queryset = queryset.filter(favorites__user=self.request.user)
-        if is_in_shopping_cart == '1' and user.is_authenticated:
-            queryset = queryset.filter(shoppinglists__user=self.request.user)
-
-        return queryset
-
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
             return RecipeWriteSerializer
@@ -226,8 +208,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_short_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
 
-        max_attempts = 100
-        for attempt in range(max_attempts):
+        for attempt in range(MAX_COLLISION_ATTEMPTS):
             try:
                 short_link, created = RecipeShortLink.objects.get_or_create(
                     recipe=recipe,
@@ -237,12 +218,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 )
                 break
             except IntegrityError as e:
-                if attempt < max_attempts - 1:
+                if attempt < MAX_COLLISION_ATTEMPTS - 1:
                     continue
                 else:
                     raise e
 
-        short_url = f'{settings.SITE_URL}/s/{short_link.code}'
+        short_url = request.build_absolute_uri(
+            reverse('short-link', kwargs={'code': short_link.code})
+        )
 
         return Response({'short-link': short_url})
 
@@ -274,7 +257,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        file_format = request.query_params.get('format', 'pdf')
         ingredients = (
             RecipeIngredient.objects
             .filter(recipe__shoppinglists__user=request.user)
@@ -286,34 +268,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .order_by('ingredient__name')
         )
 
-        if file_format == 'txt':
-            content_with_bom = '\ufeff' + build_txt(ingredients)
-
-            return HttpResponse(
-                content_with_bom.encode('utf-8'),
-                content_type='text/plain',
-                headers={
-                    'Content-Disposition':
-                        'attachment; filename="shopping_list.txt"'
-                }
-            )
-
-        if file_format == 'pdf':
-            buffer = build_pdf(ingredients)
-
-            return HttpResponse(
-                buffer,
-                content_type='application/pdf',
-                headers={
-                    'Content-Disposition':
-                        'attachment; filename="shopping_list.pdf"'
-                }
-            )
-
-        return Response(
-            {'errors': 'Unsupported format (txt, pdf)'},
-            status=400
-        )
+        return build_shopping_list_response(ingredients)
 
 
 class TagViewSet(
@@ -341,8 +296,13 @@ class IngredientViewSet(
 
 
 def short_link_redirect(request, code):
-    short_link = get_object_or_404(RecipeShortLink, code=code)
+    try:
+        short_link = RecipeShortLink.objects.get(code=code)
+        redirect_url = reverse(
+            'recipes-detail',
+            kwargs={'pk': short_link.recipe.id}
+        )
+        return HttpResponseRedirect(redirect_url)
 
-    return HttpResponseRedirect(
-        f'/recipes/{short_link.recipe.id}'
-    )
+    except RecipeShortLink.DoesNotExist:
+        return HttpResponse(status=404)

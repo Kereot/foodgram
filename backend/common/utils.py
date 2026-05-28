@@ -3,16 +3,49 @@ import random
 import string
 from io import BytesIO
 
+from django.http import HttpResponse
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
+from rest_framework.response import Response
 
-from common.constants import SHOPPING_LIST_TEXT
+from common.constants import SHOPPING_LIST_TEXT, SHOPPING_FILE_FORMAT
 
 
 def generate_short_code(length):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choices(chars, k=length))
+
+
+def build_shopping_list_response(ingredients):
+    if SHOPPING_FILE_FORMAT == 'txt':
+        content_with_bom = '\ufeff' + build_txt(ingredients)
+
+        return HttpResponse(
+            content_with_bom.encode('utf-8'),
+            content_type='text/plain',
+            headers={
+                'Content-Disposition':
+                    'attachment; filename="shopping_list.txt"'
+            }
+        )
+
+    if SHOPPING_FILE_FORMAT == 'pdf':
+        buffer = build_pdf(ingredients)
+
+        return HttpResponse(
+            buffer,
+            content_type='application/pdf',
+            headers={
+                'Content-Disposition':
+                    'attachment; filename="shopping_list.pdf"'
+            }
+        )
+
+    return Response(
+        {'errors': 'Unsupported format (txt, pdf)'},
+        status=400
+    )
 
 
 def build_txt(ingredients):
