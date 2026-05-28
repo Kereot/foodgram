@@ -62,12 +62,12 @@ class RecipeIngredientAdmin(EmptyDisplayAdmin):
 @admin.register(RecipeShortLink)
 class RecipeShortLinkAdmin(EmptyDisplayAdmin):
     list_display = ('pk', 'recipe', 'code')
-    search_fields = ('recipe',)
+    search_fields = ('recipe__name',)
 
 
 class AbstractUserRecipeAdmin(EmptyDisplayAdmin):
     list_display = ('pk', 'user', 'recipe')
-    search_fields = ('user', 'recipe')
+    search_fields = ('user__username', 'recipe__name')
 
 
 @admin.register(Favorite)
