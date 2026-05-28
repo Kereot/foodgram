@@ -18,7 +18,8 @@ from api.serializers import (AvatarSerializer, IngredientSerializer,
                              RecipeBasicReadSerializer, RecipeReadSerializer,
                              RecipeWriteSerializer, TagSerializer,
                              UserFollowSerializer)
-from common.constants import MAX_COLLISION_ATTEMPTS, SHORT_CODE_MAX_LENGTH
+from common.constants import (MAX_COLLISION_ATTEMPTS, RECIPE_FRONTEND_PATH,
+                              SHORT_CODE_MAX_LENGTH)
 from common.permissions import IsAuthorStaffOrReadOnly
 from common.utils import build_shopping_list_response, generate_short_code
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
@@ -298,7 +299,9 @@ class IngredientViewSet(
 def short_link_redirect(request, code):
     try:
         short_link = RecipeShortLink.objects.get(code=code)
-        return HttpResponseRedirect(f'/recipes/{short_link.recipe.id}')
+        return HttpResponseRedirect(
+            RECIPE_FRONTEND_PATH.format(id=short_link.recipe.id)
+        )
 
     except RecipeShortLink.DoesNotExist:
         return HttpResponse(status=status.HTTP_404_NOT_FOUND)
