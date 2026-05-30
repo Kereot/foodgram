@@ -24,10 +24,7 @@ v1_patterns = [
 urlpatterns = [
     path(
         'docs/',
-        TemplateView.as_view(
-            template_name='docs/redoc.html',
-            extra_context={'is_local': settings.DEBUG}
-        ),
+        TemplateView.as_view(template_name='docs/redoc.html'),
         name='redoc'
     ),
     path('', include(v1_patterns)),
