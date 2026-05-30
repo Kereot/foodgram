@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html>
 <head>
     <title>ReDoc</title>
@@ -18,7 +19,11 @@
     </style>
 </head>
 <body>
-<redoc spec-url='./openapi-schema.yml'></redoc>
+{% if is_local %}
+    <redoc spec-url="/static/docs/openapi-schema.yml"></redoc>
+{% else %}
+    <redoc spec-url="/static/static/docs/openapi-schema.yml"></redoc>
+{% endif %}
 <script src="https://cdn.jsdelivr.net/npm/redoc@2.5.2/bundles/redoc.standalone.js"> </script>
 </body>
 </html>

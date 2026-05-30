@@ -1,17 +1,11 @@
 import re
 
-from django.core.validators import RegexValidator
 from rest_framework.exceptions import ValidationError
 
-from common.constants import SLUG_REGEX, USERNAME_REGEX
+from common.constants import USERNAME_REGEX
 
 
 def validate_username(value):
-    if value.lower() == 'me':
-        raise ValidationError(
-            'Имя пользователя "me" запрещено'
-        )
-
     forbidden_chars = re.sub(USERNAME_REGEX, '', value)
     if forbidden_chars:
         raise ValidationError(
@@ -46,10 +40,3 @@ def validate_unique_field(field, attrs, is_nested=False):
         raise ValidationError(
             {field: f'Значения полей {field} не должны повторяться.'}
         )
-
-
-slug_validator = RegexValidator(
-    regex=SLUG_REGEX,
-    message='Здесь разрешены только латинские буквы, цифры, дефис и '
-            'подчёркивание'
-)

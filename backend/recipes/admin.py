@@ -19,6 +19,8 @@ class IngredientAdmin(EmptyDisplayAdmin):
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 1
+    min_num = 1
+    validate_min = True
 
 
 @admin.register(Recipe)
@@ -72,9 +74,9 @@ class AbstractUserRecipeAdmin(EmptyDisplayAdmin):
 
 @admin.register(Favorite)
 class FavoriteAdmin(AbstractUserRecipeAdmin):
-    pass
+    list_filter = ('recipe__name',)
 
 
 @admin.register(ShoppingList)
 class ShoppingListAdmin(AbstractUserRecipeAdmin):
-    pass
+    list_filter = ('user__username',)

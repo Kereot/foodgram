@@ -18,6 +18,8 @@
 
 ### [Адрес сайта](https://kerfood.sytes.net/)
 
+### [Документация redoc](https://kerfood.sytes.net/api/docs/)
+
 ## Описание проекта
 
 Проект реализован на Django, React и Docker.
@@ -71,6 +73,11 @@
 - /api/recipes/{id}/shopping_cart/ - $${\color{blue}POST}$$, $${\color{red}DELETE}$$ - управление рецептом в 
   списке покупок.
 
+### Документация локально:
+
+- /api/docs - локально документация будет доступна после запуска 
+  backend-приложения при настройке DEBUG=True.
+
 ## Установка и запуск
 
 ### 1. Клонируйте репозиторий
@@ -87,7 +94,6 @@ git clone https://github.com/kereot/foodgram.git
 - DJANGO_DEBUG (по умолчанию будет False)
 - DJANGO_ALLOWED_HOSTS (значения localhost, 127.0.0.1 будут по умолчанию, 
   необходимо указать их и ваш адрес сайта)
-- SITE_URL (адрес вашего сайта в Интернет, включая https://)
 - POSTGRES_USER
 - POSTGRES_PASSWORD
 - POSTGRES_DB

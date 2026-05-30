@@ -9,18 +9,19 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
 from api.filters import IngredientSearchFilter, RecipeFilter
 from api.paginators import LimitOnlyPagination
+from api.permissions import IsAuthorStaffOrReadOnlyObject
 from api.serializers import (AvatarSerializer, IngredientSerializer,
                              RecipeBasicReadSerializer, RecipeReadSerializer,
                              RecipeWriteSerializer, TagSerializer,
                              UserFollowSerializer)
 from common.constants import (MAX_COLLISION_ATTEMPTS, RECIPE_FRONTEND_PATH,
                               SHORT_CODE_MAX_LENGTH)
-from common.permissions import IsAuthorStaffOrReadOnly
 from common.utils import build_shopping_list_response, generate_short_code
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             RecipeShortLink, ShoppingList, Tag)
@@ -142,11 +143,12 @@ class UserViewSet(DjoserUserViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = LimitOnlyPagination
-    permission_classes = (IsAuthorStaffOrReadOnly,)
+    permission_classes = (
+        IsAuthenticatedOrReadOnly, IsAuthorStaffOrReadOnlyObject
+    )
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filterset_class = RecipeFilter
     ordering_fields = ('id',)
-    ordering = ('-id',)
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):

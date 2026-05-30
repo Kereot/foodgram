@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.urls import include, path
+from django.views.generic import TemplateView
 from rest_framework import routers
 
 from api.views import IngredientViewSet, RecipeViewSet, TagViewSet, UserViewSet
@@ -20,5 +22,13 @@ v1_patterns = [
 ]
 
 urlpatterns = [
+    path(
+        'docs/',
+        TemplateView.as_view(
+            template_name='docs/redoc.html',
+            extra_context={'is_local': settings.DEBUG}
+        ),
+        name='redoc'
+    ),
     path('', include(v1_patterns)),
 ]

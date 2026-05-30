@@ -19,13 +19,14 @@ DEBUG = os.getenv('DJANGO_DEBUG', default='False').lower() == 'true'
 
 ALLOWED_HOSTS = [
     host.strip() for host
-    in (os.getenv('DJANGO_ALLOWED_HOSTS') or 'localhost,127.0.0.1').split(',')
+    in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 ]
 
-SITE_URL = os.getenv('SITE_URL')
-
 CSRF_TRUSTED_ORIGINS = [
-    SITE_URL,
+    f'http://{host}'
+    if host.startswith(('localhost', '127.0.0.1'))
+    else f'https://{host}'
+    for host in ALLOWED_HOSTS
 ]
 
 INSTALLED_APPS = [
@@ -55,10 +56,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'api_foodgram.urls'
 
+TEMPLATES_DIR = BASE_DIR / 'templates'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATES_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -126,6 +128,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -154,7 +159,6 @@ REST_FRAMEWORK = {
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
-        'user_create': 'djoser.serializers.UserCreateSerializer',
         'user': 'api.serializers.ExtendedUserSerializer',
         'current_user': 'api.serializers.ExtendedUserSerializer',
     },

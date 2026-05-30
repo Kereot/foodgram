@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import ForeignKey
 
@@ -7,15 +8,18 @@ from common.constants import (DEFAULT_MAX_LENGTH,
                               RECIPE_NAME_MAX_LENGTH, SHORT_CODE_MAX_LENGTH,
                               TAG_NAME_SLUG_FIELD_MAX_LENGTH,
                               VISUAL_NAME_LIMIT)
-from common.validators import slug_validator
 from users.models import User
 
 
 class StrNameModel(models.Model):
-    name = models.CharField(max_length=DEFAULT_MAX_LENGTH)
+    name = models.CharField(
+        max_length=DEFAULT_MAX_LENGTH,
+        verbose_name='Название'
+    )
 
     class Meta:
         abstract = True
+        ordering = ('name',)
 
     def __str__(self):
         return self.name[:VISUAL_NAME_LIMIT]
@@ -27,11 +31,9 @@ class Tag(StrNameModel):
         unique=True,
         verbose_name='Уникальное название'
     )
-    slug = models.CharField(
+    slug = models.SlugField(
         max_length=TAG_NAME_SLUG_FIELD_MAX_LENGTH,
-        null=True,
         unique=True,
-        validators=(slug_validator,),
         verbose_name='Уникальный слаг'
     )
 
@@ -92,10 +94,12 @@ class Recipe(StrNameModel):
         verbose_name='Описание',
     )
     cooking_time = models.PositiveSmallIntegerField(
+        validators=(MinValueValidator(1),),
         verbose_name='Время приготовления (в минутах)'
     )
 
     class Meta:
+        ordering = ('-id',)
         verbose_name = 'рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -104,7 +108,6 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='recipe_ingredients',
         verbose_name='Рецепт'
     )
     ingredient = models.ForeignKey(
@@ -113,6 +116,7 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент'
     )
     amount = models.PositiveIntegerField(
+        validators=(MinValueValidator(1),),
         verbose_name='Количество ингредиентов'
     )
 
@@ -123,8 +127,12 @@ class RecipeIngredient(models.Model):
                 name='unique_recipe_ingredient',
             )
         ]
+        default_related_name = 'recipe_ingredients'
         verbose_name = 'ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецепта'
+
+    def __str__(self):
+        return f'{self.recipe}: {self.ingredient} - {self.amount}'
 
 
 class RecipeShortLink(models.Model):
