@@ -5,6 +5,7 @@ from django.db.models import ForeignKey
 from common.constants import (DEFAULT_MAX_LENGTH,
                               INGREDIENT_MEASUREMENT_MAX_LENGTH,
                               INGREDIENT_NAME_MAX_LENGTH,
+                              MIN_POSITIVE_INTEGER_FIELD,
                               RECIPE_NAME_MAX_LENGTH, SHORT_CODE_MAX_LENGTH,
                               TAG_NAME_SLUG_FIELD_MAX_LENGTH,
                               VISUAL_NAME_LIMIT)
@@ -82,8 +83,7 @@ class Recipe(StrNameModel):
     )
     image = models.ImageField(
         upload_to='recipes/images/',
-        null=True,
-        default=None,
+        blank=False,
         verbose_name='Картинка, закодированная в Base64'
     )
     name = models.CharField(
@@ -94,7 +94,7 @@ class Recipe(StrNameModel):
         verbose_name='Описание',
     )
     cooking_time = models.PositiveSmallIntegerField(
-        validators=(MinValueValidator(1),),
+        validators=(MinValueValidator(MIN_POSITIVE_INTEGER_FIELD),),
         verbose_name='Время приготовления (в минутах)'
     )
 
@@ -116,7 +116,7 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент'
     )
     amount = models.PositiveIntegerField(
-        validators=(MinValueValidator(1),),
+        validators=(MinValueValidator(MIN_POSITIVE_INTEGER_FIELD),),
         verbose_name='Количество ингредиентов'
     )
 

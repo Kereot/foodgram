@@ -1,5 +1,5 @@
 from django_filters import AllValuesMultipleFilter, NumberFilter
-from django_filters.rest_framework import FilterSet
+from django_filters.rest_framework import BooleanFilter, FilterSet
 from rest_framework.filters import SearchFilter
 
 from recipes.models import Recipe
@@ -17,10 +17,10 @@ class RecipeFilter(FilterSet):
     author = NumberFilter(
         field_name='author_id',
     )
-    is_favorited = NumberFilter(
+    is_favorited = BooleanFilter(
         method='filter_is_favorited',
     )
-    is_in_shopping_cart = NumberFilter(
+    is_in_shopping_cart = BooleanFilter(
         method='filter_is_in_shopping_cart',
     )
 
@@ -38,7 +38,7 @@ class RecipeFilter(FilterSet):
 
         return qs.filter(
             **{f'{related_name}__user': user}
-        ) if value == 1 and user.is_authenticated else qs
+        ) if value and user.is_authenticated else qs
 
     def filter_is_favorited(
         self,

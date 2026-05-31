@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from api.fields import NoBlankBase64ImageField
@@ -27,14 +28,12 @@ class ExtendedUserSerializer(UserSerializer):
         model = User
         fields = UserSerializer.Meta.fields + (
             'avatar',
-            # 'is_staff',
             'is_subscribed'
         )
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        # Разве это лучше читается варианта с if?
-        return bool(
+        return (
             request
             and request.user.is_authenticated
             and request.user.following.filter(author=obj).exists()
@@ -53,14 +52,14 @@ class UserFollowSerializer(ExtendedUserSerializer):
 
     def get_recipes(self, obj):
         request = self.context.get('request')
-        limit = request.query_params.get('recipes_limit')
         qs = Recipe.objects.filter(author=obj).order_by('-id')
 
-        if limit:
-            try:
-                qs = qs[:int(limit)]
-            except ValueError:
-                pass
+        try:
+            limit = int(request.query_params.get('recipes_limit'))
+            if limit > 0:
+                qs = qs[:limit]
+        except (TypeError, ValueError):
+            pass
 
         serializer = RecipeBasicReadSerializer(
             qs,
@@ -115,7 +114,7 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
 
 class RecipeBasicReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
-    image = NoBlankBase64ImageField(allow_null=True)
+    image = Base64ImageField(required=True, allow_null=False)
 
     class Meta:
         fields = (
@@ -171,7 +170,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = NoBlankBase64ImageField(required=True, allow_null=False)
+    image = Base64ImageField(required=True, allow_null=False)
     cooking_time = serializers.IntegerField(
         min_value=MIN_POSITIVE_INTEGER_FIELD,
         max_value=MAX_SMALL_POSITIVE_INTEGER_FIELD,
@@ -192,23 +191,20 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         validate_required_field('tags', attrs)
         validate_required_field('recipe_ingredients', attrs)
+        validate_required_field('image', attrs)
         validate_unique_field('tags', attrs)
         validate_unique_field('recipe_ingredients', attrs, True)
         return attrs
-    # Я так понимаю, уже не нужна проверка image, она есть в кастомном
-    # NoBlankBase64ImageField. Я её туда вставил, т.к. в модели оставил
-    # null=True, чтобы можно было напрямую в БД заносить без картинок. Из-за
-    # этого параметра в модели, drf_extra_fields иначе упорно пропускает None.
 
     def _ingredients_bulk_create(self, recipe, ingredients_data):
-        RecipeIngredient.objects.bulk_create([
+        RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
                 recipe=recipe,
                 ingredient=item['id'],
                 amount=item['amount']
             )
             for item in ingredients_data
-        ])
+        )
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('recipe_ingredients')
