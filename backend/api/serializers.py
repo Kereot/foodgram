@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from api.fields import NoBlankBase64ImageField
@@ -113,7 +114,7 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
 
 class RecipeBasicReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
-    image = NoBlankBase64ImageField(required=True, allow_null=False)
+    image = Base64ImageField(required=True, allow_null=False)
 
     class Meta:
         fields = (
@@ -169,7 +170,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True
     )
-    image = NoBlankBase64ImageField(required=True, allow_null=False)
+    image = Base64ImageField(required=True, allow_null=False)
     cooking_time = serializers.IntegerField(
         min_value=MIN_POSITIVE_INTEGER_FIELD,
         max_value=MAX_SMALL_POSITIVE_INTEGER_FIELD,
@@ -187,11 +188,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         model = Recipe
         read_only_fields = ('author',)
 
-    # Я сделал поле image везде обязательным. Его проверка в методе ниже
-    # ломается при редактировании рецепта и базовом поле Base64ImageField.
-    # Можно сделать в методе def validate_image - но зачем,
-    # кастомный класс поля всё равно используется в аватаре, и в этом классе
-    # такая же проверка. Так что я вернулся к его использованию здесь.
+    def validate_image(self, image):
+        if image in ('', None):
+            raise serializers.ValidationError(
+                'Поле изображения не может быть пустым.'
+            )
+        return image
+
     def validate(self, attrs):
         validate_required_field('tags', attrs)
         validate_required_field('recipe_ingredients', attrs)
