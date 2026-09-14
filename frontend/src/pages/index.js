@@ -10,14 +10,12 @@ import RecipeCreate from "./recipe-create";
 import User from "./user";
 import ChangePassword from "./change-password";
 import About from "./about";
-import Technologies from "./technologies";
 import UpdateAvatar from "./update-avatar";
 import ResetPassword from "./password-reset";
 import NotFound from "./not-found";
 
 export {
   Main,
-  Technologies,
   About,
   ResetPassword,
   SignIn,

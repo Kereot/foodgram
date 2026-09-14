@@ -293,7 +293,8 @@ class IngredientViewSet(
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = (IngredientSearchFilter,)
-    search_fields = ('^name',)  # Мне кажется, ограничивать началом неудобно.
+    # search_fields = ('^name',) - по ТЗ, но ограничивать началом неудобно.
+    search_fields = ('name',)
     pagination_class = None
     permission_classes = (AllowAny,)
 

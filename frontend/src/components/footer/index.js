@@ -21,14 +21,6 @@ const Footer = () => {
               className={styles['footer__menu-link']}
             />
           </li>
-          <li className={styles['footer__menu-item']}>
-            <LinkComponent
-              title='Технологии'
-              href='/technologies'
-              exact
-              className={styles['footer__menu-link']}
-            />
-          </li>
         </ul>
       </div>
 
