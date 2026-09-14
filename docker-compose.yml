@@ -1,25 +1,20 @@
 volumes:
-  pg_data:
   static:
   media:
 
 services:
-  db:
-    image: postgres:14
-    env_file: .env
-    restart: unless-stopped
-    volumes:
-      - pg_data:/var/lib/postgresql/data
   backend:
     image: kereot/foodgram-back
+    container_name: foodgram-backend
     env_file: .env
     restart: unless-stopped
     volumes:
       - static:/static
       - media:/app/media
       - ./data:/data
-    depends_on:
-      - db
+    networks:
+      - default
+      - proxy
   frontend:
     env_file: .env
     image: kereot/foodgram-front
@@ -28,9 +23,8 @@ services:
       - static:/static
   nginx:
     image: kereot/foodgram-proxy
+    container_name: foodgram-nginx
     env_file: .env
-    ports:
-      - 10000:80
     restart: unless-stopped
     volumes:
       - static:/static
@@ -38,3 +32,10 @@ services:
     depends_on:
       - backend
       - frontend
+    networks:
+      - default
+      - proxy
+
+networks:
+  proxy:
+    external: true
