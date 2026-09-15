@@ -32,6 +32,10 @@ class User(AbstractUser):
         null=True,
         verbose_name='Аватар'
     )
+    can_publish_recipes = models.BooleanField(
+        'Может публиковать рецепты',
+        default=False,
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name')

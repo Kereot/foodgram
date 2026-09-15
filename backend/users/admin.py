@@ -9,12 +9,12 @@ from users.models import Follow, User
 class UserAdmin(BaseUserAdmin):
     empty_value_display = '-пусто-'
     list_display = ('pk', 'email', 'username', 'first_name', 'last_name',
-                    'avatar')
+                    'avatar', 'can_publish_recipes')
     search_fields = ('email', 'username')
-    list_filter = ('is_staff', 'is_active')
+    list_filter = ('is_staff', 'is_active', 'can_publish_recipes')
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        (None, {'fields': ('avatar',)}),
+        (None, {'fields': ('avatar', 'can_publish_recipes')}),
     )
 
 

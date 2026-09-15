@@ -191,7 +191,7 @@ paths:
       security:
         - Token: []
       operationId: Создание рецепта
-      description: 'Доступно только авторизованному пользователю'
+      description: 'Доступно только авторизованному пользователю, которому администратор предоставил право на публикацию рецептов (иначе — 403 с пояснением в поле detail).'
       parameters: []
       requestBody:
         content:
@@ -213,6 +213,8 @@ paths:
                 $ref: '#/components/schemas/ValidationError'
         '401':
           $ref: '#/components/schemas/AuthenticationError'
+        '403':
+          $ref: '#/components/responses/RecipePublishPermissionDenied'
         '404':
           $ref: '#/components/responses/NotFound'
       tags:
@@ -1275,6 +1277,14 @@ components:
           description: 'Описание ошибки'
           example: "У вас недостаточно прав для выполнения данного действия."
           type: string
+    RecipePublishPermissionDenied:
+      description: 'Нет права на публикацию рецептов'
+      type: object
+      properties:
+        detail:
+          description: 'Описание ошибки'
+          example: "У вас нет права на публикацию рецептов. Обратитесь к администратору сайта, чтобы получить доступ."
+          type: string
     NotFound:
       description: Объект не найден
       type: object
@@ -1313,6 +1323,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/PermissionDenied'
+
+    RecipePublishPermissionDenied:
+      description: 'Нет права на публикацию рецептов'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RecipePublishPermissionDenied'
 
     NotFound:
       description: Объект не найден
